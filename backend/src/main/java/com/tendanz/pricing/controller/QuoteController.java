@@ -2,6 +2,8 @@ package com.tendanz.pricing.controller;
 
 import com.tendanz.pricing.dto.QuoteRequest;
 import com.tendanz.pricing.dto.QuoteResponse;
+import com.tendanz.pricing.entity.Quote;
+import com.tendanz.pricing.repository.QuoteRepository;
 import com.tendanz.pricing.service.PricingService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -10,17 +12,9 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
-/**
- * REST Controller for managing quotes.
- * Handles all quote-related API endpoints.
- *
- * TODO: Implement the following endpoints:
- * - POST /api/quotes       -> Create a new quote (call PricingService.calculateQuote)
- * - GET  /api/quotes/{id}  -> Already implemented below as reference
- * - GET  /api/quotes       -> Get all quotes with optional filters (productId, minPrice)
- */
 @RestController
 @RequestMapping("/api/quotes")
 @RequiredArgsConstructor
@@ -28,64 +22,44 @@ import java.util.List;
 public class QuoteController {
 
     private final PricingService pricingService;
+    private final QuoteRepository quoteRepository;
 
-    /**
-     * TODO: Create a new quote.
-     *
-     * Requirements:
-     * - Accept a QuoteRequest body with @Valid validation
-     * - Call PricingService.calculateQuote()
-     * - Return HTTP 201 CREATED with the QuoteResponse
-     * - Let the GlobalExceptionHandler handle errors
-     *
-     * @param request the quote request
-     * @return the created quote response with 201 status
-     */
     @PostMapping
     public ResponseEntity<QuoteResponse> createQuote(@Valid @RequestBody QuoteRequest request) {
-        // TODO: Implement this endpoint
-        throw new UnsupportedOperationException("TODO: Implement createQuote endpoint");
+        log.info("POST /api/quotes — client: {}", request.getClientName());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(pricingService.calculateQuote(request));
     }
 
-    /**
-     * Get a quote by ID.
-     * This endpoint is provided as a reference implementation.
-     *
-     * @param id the quote ID
-     * @return the quote response
-     */
     @GetMapping("/{id}")
     public ResponseEntity<QuoteResponse> getQuote(@PathVariable Long id) {
         log.info("Fetching quote with ID: {}", id);
-        QuoteResponse response = pricingService.getQuote(id);
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(pricingService.getQuote(id));
     }
 
-    /**
-     * TODO: Get all quotes with optional filters.
-     *
-     * Requirements:
-     * - Support optional query parameter: productId (Long) to filter by product
-     * - Support optional query parameter: minPrice (Double) to filter by minimum final price
-     * - Use QuoteRepository methods for querying
-     * - Convert Quote entities to QuoteResponse DTOs
-     * - Return HTTP 200 OK with the list
-     *
-     * Examples:
-     * - GET /api/quotes                          -> all quotes
-     * - GET /api/quotes?productId=1              -> quotes for product 1
-     * - GET /api/quotes?minPrice=500             -> quotes with finalPrice >= 500
-     * - GET /api/quotes?productId=1&minPrice=500 -> combined filters
-     *
-     * @param productId optional product ID filter
-     * @param minPrice optional minimum price filter
-     * @return list of quotes matching filters
-     */
     @GetMapping
     public ResponseEntity<List<QuoteResponse>> getAllQuotes(
             @RequestParam(required = false) Long productId,
             @RequestParam(required = false) Double minPrice) {
-        // TODO: Implement filtering and retrieval logic
-        throw new UnsupportedOperationException("TODO: Implement getAllQuotes endpoint");
+
+        log.info("GET /api/quotes — productId: {}, minPrice: {}", productId, minPrice);
+
+        List<Quote> quotes;
+
+        if (productId != null && minPrice != null) {
+            quotes = quoteRepository.findByProductId(productId).stream()
+                    .filter(q -> q.getFinalPrice().compareTo(BigDecimal.valueOf(minPrice)) >= 0)
+                    .toList();
+        } else if (productId != null) {
+            quotes = quoteRepository.findByProductId(productId);
+        } else if (minPrice != null) {
+            quotes = quoteRepository.findByFinalPriceAbove(BigDecimal.valueOf(minPrice));
+        } else {
+            quotes = quoteRepository.findAll();
+        }
+
+        return ResponseEntity.ok(
+                quotes.stream().map(q -> pricingService.getQuote(q.getId())).toList()
+        );
     }
 }

@@ -20,8 +20,16 @@ import java.util.List;
  * Hint: Spring Data JPA can derive queries from method names.
  * For more complex queries, use @Query with JPQL.
  */
+
 @Repository
 public interface QuoteRepository extends JpaRepository<Quote, Long> {
+
+    List<Quote> findByClientName(String clientName);
+
+    List<Quote> findByProductId(Long productId);
+
+    @Query("SELECT q FROM Quote q WHERE q.finalPrice >= :threshold")
+    List<Quote> findByFinalPriceAbove(@Param("threshold") BigDecimal threshold);
 
     // TODO: Add custom query methods here
 
