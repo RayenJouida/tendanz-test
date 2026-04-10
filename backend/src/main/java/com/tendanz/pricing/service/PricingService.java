@@ -37,30 +37,23 @@ public class PricingService {
         log.info("Calculating quote for client: {}, product: {}, zone: {}",
                 request.getClientName(), request.getProductId(), request.getZoneCode());
 
-        // 1. Load Product
         Product product = productRepository.findById(request.getProductId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Product not found with ID: " + request.getProductId()));
 
-        // 2. Load Zone
         Zone zone = zoneRepository.findByCode(request.getZoneCode())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "Zone not found with code: " + request.getZoneCode()));
 
-        // 3. Load PricingRule
         PricingRule rule = pricingRuleRepository.findByProductId(product.getId())
                 .orElseThrow(() -> new IllegalArgumentException(
                         "No pricing rule found for product ID: " + product.getId()));
 
-        // 4. Determine age category
         AgeCategory ageCategory = AgeCategory.fromAge(request.getClientAge());
         log.debug("Client age {} mapped to category: {}", request.getClientAge(), ageCategory);
 
-        // 5. Get age factor
         BigDecimal ageFactor = getAgeFactor(rule, ageCategory);
 
-        // 6. Calculate final price
-        // Formula: baseRate × ageFactor × zoneRiskCoefficient
         BigDecimal finalPrice = rule.getBaseRate()
                 .multiply(ageFactor)
                 .multiply(zone.getRiskCoefficient())
@@ -90,7 +83,6 @@ public class PricingService {
         quoteRepository.save(quote);
         log.info("Quote saved with ID: {}", quote.getId());
 
-        // 9. Return mapped response
         return mapToResponse(quote, appliedRules);
     }
 
