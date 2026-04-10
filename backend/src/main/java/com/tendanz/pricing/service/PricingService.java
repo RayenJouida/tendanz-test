@@ -62,14 +62,12 @@ public class PricingService {
         log.info("Calculated price: {} × {} × {} = {}",
                 rule.getBaseRate(), ageFactor, zone.getRiskCoefficient(), finalPrice);
 
-        // 7. Build applied rules log (human-readable trace of the calculation)
         List<String> appliedRules = new ArrayList<>();
         appliedRules.add("Product: " + product.getName() + " — Base rate: " + rule.getBaseRate() + " TND");
         appliedRules.add("Client age: " + request.getClientAge() + " — Category: " + ageCategory + " — Age factor: " + ageFactor);
         appliedRules.add("Zone: " + zone.getName() + " (" + zone.getCode() + ") — Risk coefficient: " + zone.getRiskCoefficient());
         appliedRules.add("Final price: " + rule.getBaseRate() + " × " + ageFactor + " × " + zone.getRiskCoefficient() + " = " + finalPrice + " TND");
 
-        // 8. Build and save Quote entity
         Quote quote = Quote.builder()
                 .product(product)
                 .zone(zone)
