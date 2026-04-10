@@ -76,6 +76,11 @@
           <td>{{ quote.createdAt | date:'short' }}</td>
         </tr>
       </tbody>
+      <div class="pagination" *ngIf="totalPages > 1">
+  <button (click)="prevPage()" [disabled]="currentPage === 0">← Previous</button>
+  <span>Page {{ currentPage + 1 }} of {{ totalPages }}</span>
+  <button (click)="nextPage()" [disabled]="currentPage === totalPages - 1">Next →</button>
+</div>
     </table>
   </div>
 
