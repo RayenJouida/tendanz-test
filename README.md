@@ -1,101 +1,58 @@
-# Test Technique — Full Stack Engineer — Tendanz Group
+# Pricing Engine — Tendanz Group
 
-## Moteur de Tarification Assurance
+## How to run
 
-### Contexte
+### Backend
 
-Vous rejoignez une équipe projet chez Tendanz Group pour développer un **moteur de tarification d'assurance**. Le système doit permettre de calculer le prix d'une couverture en fonction du profil client, du produit choisi et de la zone géographique.
-
-### Structure du projet
-
-```
-├── backend/          # Spring Boot 3.2 — Java 17
-│   ├── pom.xml
-│   └── src/
-│       ├── main/java/com/tendanz/pricing/
-│       │   ├── controller/
-│       │   │   ├── ProductController.java  # Fourni (GET /api/products)
-│       │   │   └── QuoteController.java    # → À implémenter (TODO)
-│       │   ├── service/
-│       │   │   └── PricingService.java     # → À implémenter (TODO)
-│       │   ├── repository/
-│       │   │   └── QuoteRepository.java    # → À compléter (TODO)
-│       │   ├── entity/        # Entités JPA (fournies)
-│       │   ├── dto/           # DTOs (fournis)
-│       │   ├── exception/
-│       │   │   └── GlobalExceptionHandler  # → À implémenter (TODO)
-│       │   └── enums/         # AgeCategory (fourni)
-│       └── main/resources/
-│           ├── schema.sql     # DDL (fourni)
-│           ├── data.sql       # Données initiales (fourni)
-│           └── application.yml
-│
-└── frontend/         # Angular 17 — Standalone Components
-    ├── package.json
-    └── src/app/
-        ├── services/      # → À implémenter (TODO)
-        ├── pages/         # → À implémenter (TODO)
-        └── models/        # Interfaces TypeScript (fournies)
-```
-
-### Démarrage rapide
-
-**Backend :**
-```bash
 cd backend
 mvn spring-boot:run
-# API disponible sur http://localhost:8080
-# Console H2 : http://localhost:8080/h2-console (JDBC URL: jdbc:h2:mem:testdb)
-```
 
-**Frontend :**
-```bash
+API runs on `http://localhost:8080`  
+H2 console: `http://localhost:8080/h2-console` — JDBC URL: `jdbc:h2:mem:testdb`
+
+### Frontend
+
 cd frontend
 npm install
 ng serve
-# App disponible sur http://localhost:4200
-```
 
-### Formule de tarification
+App runs on `http://localhost:4200`
 
-```
-Prix Final = Taux de Base × Facteur Âge × Coefficient Zone
-```
+---
 
-| Tranche d'âge | Catégorie | Facteur |
-|---------------|-----------|---------|
-| 18 - 24 ans   | YOUNG     | 1.30    |
-| 25 - 45 ans   | ADULT     | 1.00    |
-| 46 - 65 ans   | SENIOR    | 1.20    |
-| 66 - 99 ans   | ELDERLY   | 1.50    |
+## What I did
 
-| Zone        | Code | Coefficient |
-|-------------|------|-------------|
-| Grand Tunis | TUN  | 1.20        |
-| Sfax        | SFX  | 1.00        |
-| Sousse      | SOU  | 1.10        |
+### Backend
 
-| Produit              | Code    | Taux de Base (TND) |
-|----------------------|---------|---------------------|
-| Assurance Auto       | AUTO    | 500.00              |
-| Assurance Habitation | HABITAT | 300.00              |
-| Assurance Santé      | SANTE   | 800.00              |
+The pricing logic lives entirely in `PricingService.calculateQuote()`, it loads the product, zone, and pricing rule from the DB, determines the age category, and applies the formula.
 
-**Exemple :** Client de 30 ans, zone Tunis, Assurance Auto = 500 × 1.00 × 1.20 = **600.00 TND**
+I used `BigDecimal` for the price calculation because `double` has rounding issues with decimal numbers (not acceptable for financial data).
 
-### Livrable attendu
+Error handling is centralized in `GlobalExceptionHandler` 400 for validation, 404 when a product or zone doesn't exist, 500 for anything unexpected.
 
-- Code complété (tous les fichiers `TODO`)
-- Minimum 5 tests unitaires backend
-- README mis à jour avec vos choix techniques
-- Commits Git progressifs et clairs
+I also registered the `JavaTimeModule` on the `ObjectMapper` bean to handle `LocalDateTime` serialization properly, and added a CORS filter to allow requests from the Angular app.
 
-<<<<<<< HEAD
-Bonne chance !
-=======
-### Deadline
+### Frontend
 
-**Samedi 11 avril 2026 à 23h59**
+Three pages : quote form, quote list, quote detail. The form uses Angular Reactive Forms with validators for all fields. Products are loaded from the API so the dropdown always reflects what's in the database.
 
-Envoyez le lien de votre repository à : **recrutement.tn@tendanz.com**
->>>>>>> df8eb3a (Fix skeleton: corrected data.sql, real TODOs, frontend models, added ProductController)
+The list supports filtering by product and minimum price, sorting by date or price, and client-side pagination (2 quotes per page).
+
+### Tests
+
+8 unit tests using `@DataJpaTest` that covers all 4 age categories, invalid product/zone errors, quote retrieval by ID, and age boundary cases (24 vs 25, etc).
+
+
+
+## Bonus
+
+- PDF export: `GET /api/quotes/{id}/pdf` using iText, with a download button on the detail page
+- 4th product: "Assurance Voyage" added in `data.sql` with its own pricing rules
+- Frontend pagination on the quote list
+
+---
+
+## What I'd improve with more time
+
+- Backend pagination with Spring `Pageable` instead of slicing in memory on the frontend
+- More integration tests covering the REST endpoints
