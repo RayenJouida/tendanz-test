@@ -17,6 +17,15 @@
       <button class="secondary" routerLink="/quotes">Back to Quotes</button>
     </div>
 
+
+  <div class="header">
+  <h2>Quote #{{ quote.quoteId }}</h2>
+  <div>
+    <button class="primary" (click)="downloadPdf()">Download PDF</button>
+    <button class="secondary" routerLink="/quotes">Back to Quotes</button>
+  </div>
+</div>
+  
     <div class="grid">
       <!-- Client Information -->
       <div class="card">

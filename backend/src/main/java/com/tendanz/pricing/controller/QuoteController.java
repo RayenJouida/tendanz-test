@@ -50,7 +50,7 @@ public class QuoteController {
 
 
     @GetMapping("/{id}/pdf")
-public ResponseEntity<byte[]> downloadQuotePdf(@PathVariable Long id) {
+    public ResponseEntity<byte[]> downloadQuotePdf(@PathVariable Long id) {
     log.info("GET /api/quotes/{}/pdf", id);
     QuoteResponse quote = pricingService.getQuote(id);
 

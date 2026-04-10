@@ -38,10 +38,38 @@ export class QuoteDetailComponent implements OnInit {
     private route: ActivatedRoute
   ) {}
 
-  ngOnInit(): void {
-    // TODO: Get quote ID from route parameters
-    // TODO: Load quote from QuoteService
-    // TODO: Handle loading and error states
-    console.log('Quote detail component initialized (TODO: implement)');
+ngOnInit(): void {
+  const id = this.route.snapshot.paramMap.get('id');
+  if (!id) {
+    this.errorMessage = 'Quote ID not found';
+    return;
   }
+
+  this.loading = true;
+  this.quoteService.getQuote(Number(id)).subscribe({
+    next: (quote) => {
+      this.quote = quote;
+      this.loading = false;
+    },
+    error: () => {
+      this.errorMessage = 'Failed to load quote details';
+      this.loading = false;
+    }
+  });
+}
+
+downloadPdf(): void {
+  if (!this.quote) return;
+  this.quoteService.downloadQuotePdf(this.quote.quoteId).subscribe({
+    next: (blob) => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `quote-${this.quote!.quoteId}.pdf`;
+      a.click();
+      window.URL.revokeObjectURL(url);
+    },
+    error: () => this.errorMessage = 'Failed to download PDF'
+  });
+}
 }

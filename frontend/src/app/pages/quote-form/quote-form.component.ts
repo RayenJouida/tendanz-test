@@ -60,13 +60,12 @@ export class QuoteFormComponent implements OnInit {
     });
   }
 
-  ngOnInit(): void {
-    // TODO: Load products from ProductService
-    // TODO: Populate this.products array
-    // TODO: Handle loading and error states
-  }
-
-  /**
+ngOnInit(): void {
+  this.productService.getProducts().subscribe({
+    next: (products) => this.products = products,
+    error: () => this.errorMessage = 'Failed to load products'
+  });
+}  /**
    * Submit the form
    *
    * TODO: Implement form submission
@@ -78,11 +77,32 @@ export class QuoteFormComponent implements OnInit {
    * - On error: show error message
    * - Always reset loading state
    */
-  onSubmit(): void {
-    this.submitted = true;
-    // TODO: Implement form submission
-    console.log('Form submitted (TODO: implement)');
-  }
+onSubmit(): void {
+  this.submitted = true;
+  if (this.form.invalid) return;
+
+  this.loading = true;
+  this.errorMessage = null;
+
+  const request = {
+    productId: Number(this.form.value.productId),
+    zoneCode: this.form.value.zoneCode,
+    clientName: this.form.value.clientName,
+    clientAge: Number(this.form.value.clientAge)
+  };
+
+  this.quoteService.createQuote(request).subscribe({
+    next: (response) => {
+      this.loading = false;
+      this.successMessage = 'Quote created successfully!';
+      this.router.navigate(['/quotes', response.quoteId]);
+    },
+    error: (err) => {
+      this.loading = false;
+      this.errorMessage = err.message || 'Failed to create quote';
+    }
+  });
+}
 
   /**
    * Check if a form field has an error (provided helper)

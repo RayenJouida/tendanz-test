@@ -7,6 +7,8 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 /**
  * Entity representing an insurance product.
  * Examples: Auto Insurance, Habitation Insurance, Health Insurance
@@ -29,8 +31,10 @@ public class Product {
     @Column(length = 500)
     private String description;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
 
     @PrePersist
     protected void onCreate() {

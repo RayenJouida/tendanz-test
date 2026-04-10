@@ -8,6 +8,8 @@ import lombok.NoArgsConstructor;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+
 /**
  * Entity representing pricing rules for a product.
  * Contains base rate and age factor multipliers for different age categories.
@@ -45,8 +47,10 @@ public class PricingRule {
     @Column(name = "age_factor_elderly", nullable = false)
     private BigDecimal ageFactorElderly;
 
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
 
     @PrePersist
     protected void onCreate() {
