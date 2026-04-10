@@ -34,5 +34,5 @@ public class QuoteResponse {
 
     private List<String> appliedRules;
 
-    private LocalDateTime createdAt;
+    private String createdAt;
 }

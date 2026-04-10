@@ -11,6 +11,9 @@ import com.tendanz.pricing.repository.ProductRepository;
 import com.tendanz.pricing.repository.QuoteRepository;
 import com.tendanz.pricing.repository.ZoneRepository;
 import com.tendanz.pricing.service.PricingService;
+
+import jakarta.transaction.Transactional;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -23,21 +26,9 @@ import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-/**
- * Test class for PricingService.
- *
- * TODO: Implement at least 5 test cases covering:
- * - Quote calculation for different age categories (YOUNG, ADULT, SENIOR, ELDERLY)
- * - Different zone risk coefficients
- * - Edge cases (minimum age 18, maximum age 99, boundary between categories)
- * - Error handling (invalid product ID, invalid zone code)
- * - Quote retrieval by ID
- *
- * The @BeforeEach setUp() method below creates test data you can use.
- * Add your test methods below the existing structure.
- */
 @DataJpaTest
 @Import({PricingService.class, ObjectMapper.class})
+@Transactional
 class PricingServiceTest {
 
     @Autowired
@@ -60,96 +51,136 @@ class PricingServiceTest {
     private PricingRule pricingRule;
 
     @BeforeEach
-    void setUp() {
-        // Test data: Auto Insurance, zone coefficient 1.20, standard age factors
-        product = Product.builder()
-                .name("Test Auto Insurance")
-                .description("Test Description")
-                .createdAt(LocalDateTime.now())
-                .build();
-        productRepository.save(product);
+void setUp() {
+    product = productRepository.findAll().stream()
+            .filter(p -> p.getName().equals("Assurance Auto"))
+            .findFirst().orElseThrow();
 
-        zone = Zone.builder()
-                .code("TUN")
-                .name("Grand Tunis")
-                .riskCoefficient(BigDecimal.valueOf(1.20))
-                .build();
-        zoneRepository.save(zone);
+    zone = zoneRepository.findByCode("TUN").orElseThrow();
 
-        pricingRule = PricingRule.builder()
-                .product(product)
-                .baseRate(BigDecimal.valueOf(500.00))
-                .ageFactorYoung(BigDecimal.valueOf(1.30))
-                .ageFactorAdult(BigDecimal.valueOf(1.00))
-                .ageFactorSenior(BigDecimal.valueOf(1.20))
-                .ageFactorElderly(BigDecimal.valueOf(1.50))
-                .createdAt(LocalDateTime.now())
-                .build();
-        pricingRuleRepository.save(pricingRule);
-    }
-
-    /**
-     * TODO: Test quote calculation for an adult client (age 25-45).
-     *
-     * Expected: 500.00 × 1.00 (adult) × 1.20 (Tunis) = 600.00 TND
-     */
+    pricingRule = pricingRuleRepository.findByProductId(product.getId()).orElseThrow();
+}
     @Test
     void testCalculateQuoteForAdult() {
-        // TODO: Implement this test
-        // Hint: Use QuoteRequest.builder() to create the request
-        // Then call pricingService.calculateQuote(request)
-        // Assert: finalPrice == 600.00, basePrice == 500.00, etc.
+        QuoteRequest request = QuoteRequest.builder()
+                .productId(product.getId())
+                .zoneCode("TUN")
+                .clientName("Rayen Jouida")
+                .clientAge(30)
+                .build();
+
+        QuoteResponse response = pricingService.calculateQuote(request);
+
+        assertNotNull(response);
+        assertEquals(new BigDecimal("600.00"), response.getFinalPrice());
+        assertEquals(new BigDecimal("500.00"), response.getBasePrice());
+        assertEquals("Rayen Jouida", response.getClientName());
+        assertEquals(30, response.getClientAge());
     }
 
-    /**
-     * TODO: Test quote calculation for a young client (age 18-24).
-     *
-     * Expected: 500.00 × 1.30 (young) × 1.20 (Tunis) = 780.00 TND
-     */
     @Test
     void testCalculateQuoteForYoungClient() {
-        // TODO: Implement this test
+        QuoteRequest request = QuoteRequest.builder()
+                .productId(product.getId())
+                .zoneCode("TUN")
+                .clientName("Young Client")
+                .clientAge(20)
+                .build();
+
+        QuoteResponse response = pricingService.calculateQuote(request);
+
+        assertNotNull(response);
+        assertEquals(new BigDecimal("780.00"), response.getFinalPrice());
     }
 
-    /**
-     * TODO: Test quote calculation for a senior client (age 46-65).
-     *
-     * Expected: 500.00 × 1.20 (senior) × 1.20 (Tunis) = 720.00 TND
-     */
     @Test
     void testCalculateQuoteForSeniorClient() {
-        // TODO: Implement this test
+        QuoteRequest request = QuoteRequest.builder()
+                .productId(product.getId())
+                .zoneCode("TUN")
+                .clientName("Senior Client")
+                .clientAge(55)
+                .build();
+
+        QuoteResponse response = pricingService.calculateQuote(request);
+
+        assertNotNull(response);
+        assertEquals(new BigDecimal("720.00"), response.getFinalPrice());
     }
 
-    /**
-     * TODO: Test that requesting a quote with an invalid product ID
-     * throws IllegalArgumentException.
-     */
+    @Test
+    void testCalculateQuoteForElderlyClient() {
+        QuoteRequest request = QuoteRequest.builder()
+                .productId(product.getId())
+                .zoneCode("TUN")
+                .clientName("Elderly Client")
+                .clientAge(70)
+                .build();
+
+        QuoteResponse response = pricingService.calculateQuote(request);
+
+        assertNotNull(response);
+        assertEquals(new BigDecimal("900.00"), response.getFinalPrice());
+    }
+
     @Test
     void testCalculateQuoteWithInvalidProductId() {
-        // TODO: Implement this test
-        // Hint: Use assertThrows(IllegalArgumentException.class, () -> ...)
+        QuoteRequest request = QuoteRequest.builder()
+                .productId(999L)
+                .zoneCode("TUN")
+                .clientName("Test Client")
+                .clientAge(30)
+                .build();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> pricingService.calculateQuote(request));
     }
 
-    /**
-     * TODO: Test that requesting a quote with an invalid zone code
-     * throws IllegalArgumentException.
-     */
     @Test
     void testCalculateQuoteWithInvalidZoneCode() {
-        // TODO: Implement this test
+        QuoteRequest request = QuoteRequest.builder()
+                .productId(product.getId())
+                .zoneCode("INVALID")
+                .clientName("Test Client")
+                .clientAge(30)
+                .build();
+
+        assertThrows(IllegalArgumentException.class,
+                () -> pricingService.calculateQuote(request));
     }
 
-    /**
-     * TODO: (Bonus) Test quote retrieval by ID.
-     * Create a quote, then retrieve it with pricingService.getQuote(id).
-     * Verify all fields match.
-     */
+    @Test
+    void testGetQuoteById() {
+        QuoteRequest request = QuoteRequest.builder()
+                .productId(product.getId())
+                .zoneCode("TUN")
+                .clientName("Rayen Jouida")
+                .clientAge(30)
+                .build();
 
-    /**
-     * TODO: (Bonus) Test edge cases: age boundaries.
-     * - Age 24 should be YOUNG, age 25 should be ADULT
-     * - Age 45 should be ADULT, age 46 should be SENIOR
-     * - Age 65 should be SENIOR, age 66 should be ELDERLY
-     */
+        QuoteResponse created = pricingService.calculateQuote(request);
+        QuoteResponse fetched = pricingService.getQuote(created.getQuoteId());
+
+        assertNotNull(fetched);
+        assertEquals(created.getQuoteId(), fetched.getQuoteId());
+        assertEquals(created.getFinalPrice(), fetched.getFinalPrice());
+        assertEquals(created.getClientName(), fetched.getClientName());
+    }
+
+    @Test
+    void testAgeBoundaries() {
+        QuoteRequest youngBoundary = QuoteRequest.builder()
+                .productId(product.getId()).zoneCode("TUN")
+                .clientName("Boundary Young").clientAge(24).build();
+
+        QuoteRequest adultBoundary = QuoteRequest.builder()
+                .productId(product.getId()).zoneCode("TUN")
+                .clientName("Boundary Adult").clientAge(25).build();
+
+        QuoteResponse youngResponse = pricingService.calculateQuote(youngBoundary);
+        QuoteResponse adultResponse = pricingService.calculateQuote(adultBoundary);
+
+        assertEquals(new BigDecimal("780.00"), youngResponse.getFinalPrice());
+        assertEquals(new BigDecimal("600.00"), adultResponse.getFinalPrice());
+    }
 }
