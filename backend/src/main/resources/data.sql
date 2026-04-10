@@ -30,3 +30,11 @@ VALUES (2, 300.00, 1.30, 1.00, 1.20, 1.50, CURRENT_TIMESTAMP);
 -- Assurance Santé: base_rate = 800.00 TND
 INSERT INTO pricing_rule (product_id, base_rate, age_factor_young, age_factor_adult, age_factor_senior, age_factor_elderly, created_at)
 VALUES (3, 800.00, 1.30, 1.00, 1.20, 1.50, CURRENT_TIMESTAMP);
+
+
+-- Assurance Voyage: base_rate = 400.00 TND (4th product - bonus)
+INSERT INTO product (name, description, created_at) VALUES
+('Assurance Voyage', 'Travel insurance coverage for international trips', CURRENT_TIMESTAMP);
+
+INSERT INTO pricing_rule (product_id, base_rate, age_factor_young, age_factor_adult, age_factor_senior, age_factor_elderly, created_at)
+VALUES (4, 400.00, 1.20, 1.00, 1.10, 1.40, CURRENT_TIMESTAMP);
